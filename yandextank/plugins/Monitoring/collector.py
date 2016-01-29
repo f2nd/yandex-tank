@@ -250,7 +250,6 @@ class AgentClient(object):
 
         # create remote temp dir
         cmd = self.python + ' -c "import tempfile; print tempfile.mkdtemp();"'
-        logger.info("Creating temp dir on %s", self.host)
         try:
             out, errors, err_code = self.ssh.execute(cmd)
         except:
@@ -348,17 +347,14 @@ class MonitoringCollector(object):
 
         logger.debug("filter_conf: %s", self.filter_conf)
 
-        # Filtering
+        # Initialization, actual filters set up after the first line of data arrive
         for host in self.filter_conf:
             self.filter_mask[host] = []
-        logger.debug("Filter mask: %s", self.filter_mask)
 
         # Creating agent for hosts
-        logger.debug('Creating agents')
         for adr in agent_config:
             logger.debug('Creating agent: %s', adr)
             agent = AgentClient(adr, timeout=self.ssh_timeout)
-            logger.debug('Install monitoring agent. Host: %s', agent.host)
             agent_config = agent.install(loglevel)
             if agent_config:
                 self.agents.append(agent)
@@ -377,7 +373,7 @@ class MonitoringCollector(object):
             lines = block.split("\n")
 
             for data in lines:
-                logger.debug("Got data from agent: %s", data.strip())
+                logger.debug("Got %s bytes from agent on %s: '%s'", len(data), agent.host, data.strip())
                 self.send_data += self.filter_unused_data(
                     self.filter_conf, self.filter_mask, data)
                 logger.debug("Data after filtering: %s", self.send_data)
@@ -459,10 +455,7 @@ class MonitoringCollector(object):
             elif (str(metric.tag)).lower() == 'shutdown':
                 shutdowns.append(metric.text)
 
-        logger.debug("Metrics count: %s", metrics_count)
-        logger.debug("Host len: %s", len(host))
-        logger.debug("keys: %s", host.attrib.keys())
-        logger.debug("values: %s", host.attrib.values())
+        logger.debug("Host processed: %s with %s elements, got %s metric types with %s metrics ", host.attrib, len(host), metrics_count, len(stat))
 
         # use default metrics for host
         if metrics_count == 0:
@@ -532,7 +525,6 @@ class MonitoringCollector(object):
 
     def filter_unused_data(self, filter_conf, filter_mask, data):
         """Filter unselected metrics from data"""
-        logger.debug("Filtering data: %s", data)
         out = ''
         # Filtering data
         keys = data.rstrip().split(';')
