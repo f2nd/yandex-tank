@@ -27,13 +27,15 @@ class Plugin(AbstractPlugin):
         self.args = None
         self.original_jmx = None
         self.jtl_file = None
+        self.ext_log = None
+        self.ext_levels = ['none', 'errors', 'all']
+        self.ext_log_file = None
         self.jmx = None
         self.user_args = None
         self.jmeter_path = None
         self.jmeter_log = None
         self.start_time = time.time()
         self.jmeter_buffer_size = None
-        self.use_argentum = None
 
     @staticmethod
     def get_key():
@@ -49,12 +51,17 @@ class Plugin(AbstractPlugin):
         self.jtl_file = self.core.mkstemp('.jtl', 'jmeter_')
         self.core.add_artifact_file(self.jtl_file)
         self.user_args = self.get_option("args", '')
-        self.jmeter_path = self.get_option("jmeter_path", 'jmeter')
+        self.jmeter_path = self.get_option('jmeter_path', 'jmeter')
         self.jmeter_log = self.core.mkstemp('.log', 'jmeter_')
+        self.ext_log = self.get_option('extended_log', self.get_option('ext_log', 'none'))
+        if self.ext_log not in self.ext_levels:
+            self.ext_log = 'none'
+        if self.ext_log != 'none':
+            self.ext_log_file = self.core.mkstemp('.jtl', 'jmeter_ext_')
+            self.core.add_artifact_file(self.ext_log_file)
         self.jmeter_buffer_size = int(self.get_option(
             'buffer_size', self.get_option('buffered_seconds', '3')))
         self.core.add_artifact_file(self.jmeter_log, True)
-        self.use_argentum = eval(self.get_option('use_argentum', 'False'))
         self.exclude_markers = set(filter(
             (lambda marker: marker != ''), self.get_option('exclude_markers',
                                                            []).split(' ')))
@@ -148,33 +155,34 @@ class Plugin(AbstractPlugin):
         except Exception, exc:
             raise RuntimeError("Failed to find the end of JMX XML: %s" % exc)
 
-        tpl_resource = 'jmeter_writer.xml'
-
-        if self.use_argentum:
-            logger.warn(
-                "You are using argentum aggregator for JMeter. Be careful.")
-            tpl_resource = 'jmeter_argentum.xml'
-
-        tpl = resource_string(__name__, 'config/' + tpl_resource)
         udv_tpl = resource_string(__name__, 'config/jmeter_var_template.xml')
-
         udv_set = []
         for var_name, var_value in variables.iteritems():
             udv_set.append(udv_tpl % (var_name, var_name, var_value))
+        udv = "\n".join(udv_set)
+
+        if self.ext_log in ['errors', 'all']:
+            level_map = {'errors':'true', 'all':'false'}
+            tpl_resource = 'jmeter_writer_ext.xml'
+            tpl_args = {'jtl':self.jtl_file, 'udv':udv, 'ext_log':self.ext_log_file, 'ext_level':level_map[self.ext_log]}
+        else:
+            tpl_resource = 'jmeter_writer.xml'
+            tpl_args = {'jtl':self.jtl_file, 'udv':udv}
+
+        tpl = resource_string(__name__, 'config/' + tpl_resource)
 
         try:
-            new_file = self.core.mkstemp(
+            new_jmx = self.core.mkstemp(
                 '.jmx', 'modified_', os.path.dirname(os.path.realpath(jmx)))
         except OSError, exc:
             logger.debug("Can't create modified jmx near original: %s", exc)
-            new_file = self.core.mkstemp('.jmx', 'modified_')
-        logger.debug("Modified JMX: %s", new_file)
-        file_handle = open(new_file, "wb")
-        file_handle.write(''.join(source_lines))
-        file_handle.write(tpl % (jtl, "\n".join(udv_set)))
-        file_handle.write(closing)
-        file_handle.close()
-        return new_file
+            new_jmx = self.core.mkstemp('.jmx', 'modified_')
+        logger.debug("Modified JMX: %s", new_jmx)
+        with open(new_jmx, "wb") as fh:
+            fh.write(''.join(source_lines))
+            fh.write(tpl % tpl_args)
+            fh.write(closing)
+        return new_jmx
 
     def _get_variables(self):
         res = {}
