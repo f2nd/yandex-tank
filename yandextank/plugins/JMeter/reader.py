@@ -139,6 +139,8 @@ class JMeterReader(object):
         self.buffer = ""
         self.stat_buffer = ""
         self.jtl_file = filename
+        self.jmeter_finished = False
+        self.agg_finished = False
         self.closed = False
         self.stat_queue = q.Queue()
         self.stats_reader = JMeterStatAggregator(TimeChopper(
@@ -167,6 +169,8 @@ class JMeterReader(object):
             else:
                 self.buffer += parts[0]
         else:
+            if self.jmeter_finished:
+                self.agg_finished = True
             jtl.readline()
         return None
 

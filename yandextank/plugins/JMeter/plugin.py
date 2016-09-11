@@ -121,9 +121,18 @@ class Plugin(AbstractPlugin):
 
     def is_test_finished(self):
         retcode = self.jmeter_process.poll()
-        if retcode is not None:
-            logger.info("JMeter process finished with exit code: %s", retcode)
-            return retcode
+        aggregator = self.core.get_plugin_of_type(AggregatorPlugin)
+        if not aggregator.reader.jmeter_finished and retcode is not None:
+            logger.info("JMeter process finished with exit code: %s, waiting for aggregator", retcode)
+            self.retries = 0
+            aggregator.reader.jmeter_finished = True
+            return -1
+        elif aggregator.reader.jmeter_finished is True:
+	    if aggregator.reader.agg_finished:
+                return retcode
+            else:
+                logger.info("Waiting for aggregator to finish")
+                return -1
         else:
             return -1
 
