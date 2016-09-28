@@ -33,6 +33,7 @@ class Plugin(AbstractPlugin):
         self.jmx = None
         self.user_args = None
         self.jmeter_path = None
+        self.jmeter_ver = None
         self.jmeter_log = None
         self.start_time = time.time()
         self.jmeter_buffer_size = None
@@ -53,6 +54,7 @@ class Plugin(AbstractPlugin):
         self.user_args = self.get_option("args", '')
         self.jmeter_path = self.get_option('jmeter_path', 'jmeter')
         self.jmeter_log = self.core.mkstemp('.log', 'jmeter_')
+        self.jmeter_ver = float(self.get_option('jmeter_ver', '3.0'))
         self.ext_log = self.get_option('extended_log', self.get_option('ext_log', 'none'))
         if self.ext_log not in self.ext_levels:
             self.ext_log = 'none'
@@ -170,13 +172,21 @@ class Plugin(AbstractPlugin):
             udv_set.append(udv_tpl % (var_name, var_name, var_value))
         udv = "\n".join(udv_set)
 
+        if self.jmeter_ver >= 2.13:
+            save_connect = '<connectTime>true</connectTime>'
+        else:
+            save_connect = ''
+
         if self.ext_log in ['errors', 'all']:
             level_map = {'errors':'true', 'all':'false'}
             tpl_resource = 'jmeter_writer_ext.xml'
-            tpl_args = {'jtl':self.jtl_file, 'udv':udv, 'ext_log':self.ext_log_file, 'ext_level':level_map[self.ext_log]}
+            tpl_args = {'jtl':self.jtl_file, 'udv':udv,
+                        'ext_log':self.ext_log_file,
+                        'ext_level':level_map[self.ext_log],
+                        'save_connect': save_connect}
         else:
             tpl_resource = 'jmeter_writer.xml'
-            tpl_args = {'jtl':self.jtl_file, 'udv':udv}
+            tpl_args = {'jtl':self.jtl_file, 'udv':udv, 'save_connect': save_connect}
 
         tpl = resource_string(__name__, 'config/' + tpl_resource)
 

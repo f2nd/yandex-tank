@@ -28,6 +28,7 @@
             <assertionsResultsToSave>0</assertionsResultsToSave>
             <bytes>true</bytes>
             <threadCounts>true</threadCounts>
+            %(save_connect)s
         </value>
     </objProp>
     <stringProp name="filename">%(jtl)s</stringProp>
@@ -66,6 +67,7 @@
             <threadCounts>true</threadCounts>
             <sampleCount>true</sampleCount>
             <idleTime>true</idleTime>
+            %(save_connect)s
         </value>
     </objProp>
 <stringProp name="filename">%(ext_log)s</stringProp>

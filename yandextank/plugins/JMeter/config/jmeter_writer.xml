@@ -28,6 +28,7 @@
             <assertionsResultsToSave>0</assertionsResultsToSave>
             <bytes>true</bytes>
             <threadCounts>true</threadCounts>
+            %(save_connect)s
         </value>
     </objProp>
     <stringProp name="filename">%(jtl)s</stringProp>
