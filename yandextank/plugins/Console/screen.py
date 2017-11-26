@@ -6,7 +6,6 @@ import os
 import struct
 import termios
 import time
-import math
 from collections import defaultdict
 import pandas as pd
 
@@ -934,13 +933,13 @@ class CasesBlock(AbstractBlock):
         self.field_order = ['name', 'count', 'percent', 'last', 'net_err', 'http_err', 'avg', 'last_avg']
 
         template = {
-            'name':     {'tpl': u'{:>}:',   'header': 'name', 'final': u'{{{:}:>{len}}}'},
-            'count':    {'tpl': '{:>,}',    'header': 'count'},
-            'last':     {'tpl': '+{:>,}',   'header': 'last'},
-            'percent':  {'tpl': '{:>.2f}%', 'header': '%'},
-            'net_err':  {'tpl': '{:>,}',    'header': 'net_e'},
-            'http_err': {'tpl': '{:>,}',    'header': 'http_e'},
-            'avg':      {'tpl': '{:>,.1f}', 'header': 'avg ms'},
+            'name':     {'tpl': u'{:>}:',   'header': 'name', 'final': u'{{{:}:>{len}}}'},  # noqa: E241
+            'count':    {'tpl': '{:>,}',    'header': 'count'},   # noqa: E241
+            'last':     {'tpl': '+{:>,}',   'header': 'last'},    # noqa: E241
+            'percent':  {'tpl': '{:>.2f}%', 'header': '%'},       # noqa: E241
+            'net_err':  {'tpl': '{:>,}',    'header': 'net_e'},   # noqa: E241
+            'http_err': {'tpl': '{:>,}',    'header': 'http_e'},  # noqa: E241
+            'avg':      {'tpl': '{:>,.1f}', 'header': 'avg ms'},  # noqa: E241
             'last_avg': {'tpl': '{:>,.1f}', 'header': 'last ms'}
         }
         delimiters = [' ']
